@@ -216,6 +216,7 @@ def main(args):
         else:
             work_queue.put(alignment_args)
 
+
     for w in xrange(workers):
         p = Process(target=aligner, args=(work_queue, done_queue))
         p.start()
