@@ -8,7 +8,8 @@ from signalalign import defaultModelFromVersion
 from signalalign.nanoporeRead import NanoporeRead
 from signalalign.utils.bwaWrapper import generateGuideAlignment
 from signalalign.utils.fileHandlers import FolderHandler
-
+from embed_signalalign import *
+from shutil import copyfile
 
 class SignalAlignment(object):
     def __init__(self,
@@ -251,6 +252,17 @@ class SignalAlignment(object):
         # run
         print("signalAlign - running command: ", command, end="\n", file=sys.stderr)
         os.system(command)
+        # print(self.in_fast5)
+        # print(self.read_name)
+        # print(posteriors_file_path)
+        # print(labelledFile)
+        newFile = True
+        if newFile:
+            newFast5 = self.destination+self.read_name+".fast5"
+            copyfile(self.in_fast5, newFast5)
+            makeFast5(newFast5, posteriors_file_path, read_fasta_)
+        else:
+            makeFast5(self.in_fast5, posteriors_file_path, read_fasta_)
         self.temp_folder.remove_folder()
         return True
 

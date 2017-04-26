@@ -85,6 +85,8 @@ def parse_args():
     parser.add_argument('--output_format', '-f', action='store', default="full", dest='outFmt',
                         help="output format: full, variantCaller, or assignments. Default: full")
     parser.add_argument('--debug', action='store_true', dest="DEBUG", default=False)
+    # parser.add_argument('--testing', action='store_true', default=False)
+
 
     args = parser.parse_args()
     return args
@@ -191,7 +193,7 @@ def main(args):
 
     print("[runSignalAlign]:NOTICE: Got {} files to align".format(len(fast5s)), file=sys.stdout)
     for fast5 in fast5s:
-        print(fast5)
+        # print(fast5)
         alignment_args = {
             "reference_map": reference_map,
             "destination": temp_dir_path,
