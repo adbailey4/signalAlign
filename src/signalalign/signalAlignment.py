@@ -28,7 +28,9 @@ class SignalAlignment(object):
                  degenerate,
                  twoD_chemistry,
                  target_regions=None,
-                 output_format="full"):
+                 output_format="full",
+                 label=False,
+                 originalFast5=False):
         self.in_fast5           = in_fast5            # fast5 file to align
         self.reference_map      = reference_map       # map with paths to reference sequences
         self.destination        = destination         # place where the alignments go, should already exist
@@ -44,6 +46,9 @@ class SignalAlignment(object):
         self.read_name          = self.in_fast5.split("/")[-1][:-6]  # get the name without the '.fast5'
         self.target_regions     = target_regions
         self.output_formats     = {"full": 0, "variantCaller": 1, "assignments": 2}
+        self.label              = label
+        self.originalFast5      = originalFast5
+
 
         if (in_templateHmm is not None) and os.path.isfile(in_templateHmm):
             self.in_templateHmm = in_templateHmm
@@ -252,17 +257,15 @@ class SignalAlignment(object):
         # run
         print("signalAlign - running command: ", command, end="\n", file=sys.stderr)
         os.system(command)
-        # print(self.in_fast5)
-        # print(self.read_name)
-        # print(posteriors_file_path)
-        # print(labelledFile)
-        newFile = True
-        if newFile:
-            newFast5 = self.destination+self.read_name+".fast5"
-            copyfile(self.in_fast5, newFast5)
-            makeFast5(newFast5, posteriors_file_path, read_fasta_)
-        else:
-            makeFast5(self.in_fast5, posteriors_file_path, read_fasta_)
+
+        # embed signal align kmer calls into original or new fast5 file
+        if self.label:
+            if not self.originalFast5:
+                newFast5 = self.destination+self.read_name+".fast5"
+                copyfile(self.in_fast5, newFast5)
+                makeFast5(newFast5, posteriors_file_path, read_fasta_)
+            else:
+                makeFast5(self.in_fast5, posteriors_file_path, read_fasta_)
         self.temp_folder.remove_folder()
         return True
 
