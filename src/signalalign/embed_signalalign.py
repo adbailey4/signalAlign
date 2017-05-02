@@ -25,7 +25,7 @@ from timeit import default_timer as timer
 import sys
 from shutil import copyfile
 from numpy.lib.recfunctions import append_fields, drop_fields
-from nanonet.features import *
+# from nanonet.features import *
 
 def embed_signalalign(signalalign_tsv, events, strand, CHECK_EVERY=False, eventalign=False):
     """Embed signal align tsv file kmers into fast5 files sequencing files"""
