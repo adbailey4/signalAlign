@@ -25,58 +25,77 @@ from timeit import default_timer as timer
 import sys
 from shutil import copyfile
 from numpy.lib.recfunctions import append_fields, drop_fields
+from nanonet.features import *
 
-
-def embed_signalalign(signalalign_tsv, events, CHECK_EVERY=False, eventalign=False):
+def embed_signalalign(signalalign_tsv, events, strand, CHECK_EVERY=False, eventalign=False):
     """Embed signal align tsv file kmers into fast5 files sequencing files"""
 
     with open(signalalign_tsv) as tsv:
         reader = csv.reader(tsv, delimiter="\t")
         numSkips = 0
         numStays = 0
-        forward = False
         numEvents = 0
-        numlines = 100000000
+        numlines = float("inf")
         if eventalign:
             next(reader)
         for line in reader:
             chromosome = np.string_(line[0])
             seq_pos = int(line[1])
-            kmer = np.string_(line[2])
+            kmer = np.string_(line[15])
             name = line[3]
+            template = line[4]
             event_index = int(line[5])
+            prob = float(line[12])
             if numEvents < numlines:
                 if numEvents == 0:
                     initial_event_index = event_index
                     initial_ref_index = seq_pos
                     prev_seq_pos = seq_pos
                     last_name = name
+                    # numEvents += 1
+                if template == "c":
+                    # break when going to complement strand
+                    print("c")
+                    break
                     # print(int(event_index))
                 else:
-                    if seq_pos == prev_seq_pos:
-                        numStays += 1
-                    if seq_pos > prev_seq_pos+1:
-                        numSkips += 1
-                    if name != last_name:
-                        break
                 # print(line)
-                events["seq_pos"][event_index] = seq_pos-initial_ref_index
-                events["kmer"][event_index] = kmer
-                # print (event_index, seq_pos, kmer)
-                prev_seq_pos = seq_pos
-                numEvents += 1
-
-                if CHECK_EVERY:
-                    if numEvents > 1:
-                        if int(event_index) + 1 != int(line[5]):
-                            print("FAIL")
-                            print(int(event_index), int(line[5]))
+                # embed most probable kmer
+                    if events["prob"][event_index] < prob:
+                        events["prob"][event_index] = prob
+                        events["kmer"][event_index] = kmer
+                        if strand == "-":
+                            events["seq_pos"][event_index] = initial_ref_index-seq_pos
+                        else:
+                            events["seq_pos"][event_index] = seq_pos-initial_ref_index
+                        # TODO: fix this if needed for signalAlign
+                        if seq_pos == prev_seq_pos:
+                            numStays += 1
+                        if strand == "-":
+                            if seq_pos < prev_seq_pos+1:
+                                numSkips += 1
+                        else:
+                            if seq_pos > prev_seq_pos+1:
+                                numSkips += 1
+                        # this is for naomod labeling process comparison
+                        if name != last_name:
                             break
+                        # print (event_index, seq_pos, kmer)
+                        prev_seq_pos = seq_pos
+                        last_ref_index = seq_pos
+                        last_name = line[3]
+                        numEvents += 1
+                    if CHECK_EVERY:
+                        if numEvents > 1:
+                            if int(event_index) + 1 != int(line[5]):
+                                print("FAIL")
+                                print(int(event_index), int(line[5]))
+                                break
 
-                last_ref_index = seq_pos
-                last_name = line[3]
         # print(initial_event_index, initial_ref_index, chromosome, last_ref_index, numSkips, numStays, numEvents, forward)
-    return initial_event_index, initial_ref_index, chromosome, last_ref_index, numSkips, numStays, numEvents, forward, events
+    # print("######### EVENTS TO FEATURES ###############")
+    # print(events_to_features(events)[0])
+    return initial_event_index, initial_ref_index, chromosome, last_ref_index, numSkips, numStays, numEvents, events
 
 def processRead(fast5Path):
     """Get """
@@ -94,7 +113,7 @@ def processRead(fast5Path):
         return [fast5File, False]
 
 
-def makeFast5(newPath, signalalign_tsv, fastaFile, kmer=5, eventalign=False):
+def makeFast5(newPath, signalalign_tsv, fastaFile, strand, kmer=5, eventalign=False):
     """Make put in a table into a fast5 file"""
     with h5py.File(newPath,'r+') as fast5:
         analysesGroup = fast5.get("Analyses")
@@ -107,11 +126,12 @@ def makeFast5(newPath, signalalign_tsv, fastaFile, kmer=5, eventalign=False):
         # print(type(events))
         events = append_fields(events, 'kmer', data=['X'*kmer] * events.shape[0], dtypes='<S'+str(kmer))
         events = append_fields(events, 'seq_pos', [-1] * events.shape[0])
+        events = append_fields(events, 'prob', [0.0] * events.shape[0])
         events = drop_fields(events, "move")
         # print(events.shape)
         # print(events["kmer"].shape)
         # print(events["seq_pos"][1])
-        initial_event_index, initial_ref_index, chromosome, last_ref_index, numSkips, numStays, numEvents, forward, events = embed_signalalign(signalalign_tsv, events, eventalign=eventalign)
+        initial_event_index, initial_ref_index, chromosome, last_ref_index, numSkips, numStays, numEvents, events = embed_signalalign(signalalign_tsv, events, strand, eventalign=eventalign)
         skipProb = numSkips/numEvents
         stayProb = numStays/numEvents
         stepProb = 1-skipProb-stayProb
@@ -132,7 +152,7 @@ def makeFast5(newPath, signalalign_tsv, fastaFile, kmer=5, eventalign=False):
         attrs.create("genome_end", last_ref_index)
         attrs.create("sequence_length", last_ref_index - initial_ref_index)
         attrs.create("ref_name", chromosome)
-        attrs.create("direction", np.string_("+") if forward else np.string_("-"))
+        attrs.create("direction", np.string_(strand))
         attrs.create("num_skips", numSkips)
         attrs.create("num_stays", numStays)
         attrs.create("num_events", numEvents)
@@ -179,8 +199,7 @@ def main():
     assert os.path.exists(fastaFile)
 
     copyfile(fast5_file, testoutput)
-    makeFast5(testoutput, signalalign_tsv, fastaFile, eventalign=False)
-    # makeFast5(testoutput, signalalign_tsv)
+    makeFast5(testoutput, signalalign_tsv, fastaFile, "-", eventalign=False)
 
     stop = timer()
     print("Running Time = {} seconds".format(stop-start), file=sys.stderr)

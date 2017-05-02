@@ -263,10 +263,10 @@ class SignalAlignment(object):
             if not self.originalFast5:
                 newFast5 = self.destination+self.read_name+".fast5"
                 copyfile(self.in_fast5, newFast5)
-                makeFast5(newFast5, posteriors_file_path, read_fasta_)
+                makeFast5(newFast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
             else:
-                makeFast5(self.in_fast5, posteriors_file_path, read_fasta_)
-        self.temp_folder.remove_folder()
+                makeFast5(self.in_fast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
+        # self.temp_folder.remove_folder()
         return True
 
     def prepare_oned(self, nanopore_read, oned_read_path):
