@@ -266,7 +266,7 @@ class SignalAlignment(object):
                 makeFast5(newFast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
             else:
                 makeFast5(self.in_fast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
-        # self.temp_folder.remove_folder()
+        self.temp_folder.remove_folder()
         return True
 
     def prepare_oned(self, nanopore_read, oned_read_path):
