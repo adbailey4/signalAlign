@@ -87,6 +87,7 @@ def parse_args():
     parser.add_argument('--debug', action='store_true', dest="DEBUG", default=False)
     parser.add_argument('--label', action='store_true', default=False, dest="label", help="Label fast5 file with labeled kmers from alignment output. Default: False")
     parser.add_argument('--originalFast5', action='store_true', default=False, dest="originalFast5", help="Label the original fast5 file instead of making a copy and labeling the copy")
+    parser.add_argument('--log_file', default=False, action="store", dest="log_file", help="Log the fast5 file and tsv file outputs into a text file")
 
     args = parser.parse_args()
     return args
@@ -213,7 +214,8 @@ def main(args):
             "twoD_chemistry": args.twoD,
             "target_regions": args.target_regions,
             "label": args.label,
-            "originalFast5": args.originalFast5
+            "originalFast5": args.originalFast5,
+            "log_file": args.log_file
         }
         if args.DEBUG:
             alignment = SignalAlignment(**alignment_args)

@@ -30,7 +30,8 @@ class SignalAlignment(object):
                  target_regions=None,
                  output_format="full",
                  label=False,
-                 originalFast5=False):
+                 originalFast5=False,
+                 log_file=False):
         self.in_fast5           = in_fast5            # fast5 file to align
         self.reference_map      = reference_map       # map with paths to reference sequences
         self.destination        = destination         # place where the alignments go, should already exist
@@ -48,7 +49,7 @@ class SignalAlignment(object):
         self.output_formats     = {"full": 0, "variantCaller": 1, "assignments": 2}
         self.label              = label
         self.originalFast5      = originalFast5
-
+        self.log_file           = log_file
 
         if (in_templateHmm is not None) and os.path.isfile(in_templateHmm):
             self.in_templateHmm = in_templateHmm
@@ -156,7 +157,7 @@ class SignalAlignment(object):
         if self.twoD_chemistry:
             if self.in_complementHmm is None:
                 self.in_complementHmm = defaultModelFromVersion(strand="complement", version=version,
-                                                                pop1_complement=pop1_complement)
+                pop1_complement=pop1_complement)
 
         assert self.in_templateHmm is not None
         if self.twoD_chemistry:
@@ -266,6 +267,10 @@ class SignalAlignment(object):
                 makeFast5(newFast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
             else:
                 makeFast5(self.in_fast5, posteriors_file_path, read_fasta_, guide_alignment.strand)
+        # print(self.log_file)
+        if self.log_file != False:
+            with open(self.log_file, 'a+') as fh:
+                fh.write(self.in_fast5+"\t"+posteriors_file_path+'\n')
         self.temp_folder.remove_folder()
         return True
 

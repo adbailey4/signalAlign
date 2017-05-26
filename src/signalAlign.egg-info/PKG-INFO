@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: signalAlign
+Version: 0.1.3
+Summary: A library for signal-level analysis of ONT data
+Home-page: https://github.com/ArtRand/signalAlign
+Author: Art Rand
+Author-email: arand@soe.ucsc.edu
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
